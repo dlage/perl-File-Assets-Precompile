@@ -1,4 +1,7 @@
 package File::Assets::Precompile;
+{
+    $File::Assets::Precompile::VERSION = '0.01';
+}
 
 use 5.006;
 use strict;
@@ -13,8 +16,6 @@ File::Assets::Precompile - The great new File::Assets::Precompile!
 Version 0.01
 
 =cut
-
-our $VERSION = '0.01';
 
 =head1 SYNOPSIS
 
