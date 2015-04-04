@@ -18,3 +18,4 @@ File-Assets-Precompile-*
 File-Assets-Precompile-*.tar.gz
 *.swp
 *.swo
+t/public

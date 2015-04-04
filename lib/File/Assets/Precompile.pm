@@ -16,7 +16,6 @@ Version 0.01
 
 our $VERSION = '0.01';
 
-
 =head1 SYNOPSIS
 
 Quick summary of what the module does.
@@ -34,6 +33,43 @@ A list of functions that can be exported.  You can delete this section
 if you don't export anything, such as for a purely object-oriented module.
 
 =head1 SUBROUTINES/METHODS
+=cut
+
+use Moose;
+use namespace::autoclean;
+
+use File::Basename qw();
+use File::Find;
+use Path::Class;
+use Path::Class::Dir;
+use Path::Class::File;
+
+use Digest;
+use JavaScript::Minifier::XS;
+use CSS::Minifier::XS;
+
+has 'base_path' => (
+    'is'  => 'rw',
+    'isa' => 'Str',
+);
+
+has 'output_path' => (
+    'is'  => 'ro',
+    'isa' => 'Str',
+);
+
+has 'digest_method' => (
+    'is'      => 'ro',
+    'isa'     => 'Str',
+    'default' => 'MD5',
+);
+
+has 'asset_cache' => (
+    'is'         => 'rw',
+    'isa'        => 'HashRef',
+    'init_arg'   => undef,
+    'lazy_build' => 1,
+);
 
 =head2 function1
 
@@ -42,11 +78,70 @@ if you don't export anything, such as for a purely object-oriented module.
 sub function1 {
 }
 
-=head2 function2
+=head2 _build_asset_cache
 
 =cut
 
-sub function2 {
+sub _build_asset_cache {
+    my $self  = shift;
+    my $files = $self->find_files();
+    return $files;
+}
+
+=head2 md5sum
+=cut
+
+sub calculate_fingerprint {
+    my $self = shift;
+    my %args = @_;
+
+    my $file = $args{'file'};
+    open my $fh, '<:raw', $file;
+    my $digest = Digest->new( $self->digest_method );
+    $digest->addfile($fh);
+    close($fh);
+
+    return $digest->hexdigest;
+}
+
+sub find_files {
+    my $self = shift;
+    my %args = @_;
+
+    my %file_cache;
+    my $wanted = sub {
+        my $full_path = $File::Find::name;
+        if ( !-f $full_path ) {
+            return;
+        }
+        my $file     = Path::Class::File->new($full_path);
+        my $rel_path = File::Spec->abs2rel( $file, $self->base_path );
+        my $mtime    = [ stat($file) ]->[9];
+
+        my ( $filename, $dirs, $suffix ) = File::Basename::fileparse($rel_path,'\..*');
+        my $dest_dir = Path::Class::Dir->new( $self->output_path, $dirs, );
+        if ( !-d $dest_dir ) {
+            $dest_dir->mkpath;
+        }
+
+        my $fingerprint = $self->calculate_fingerprint( 'file' => $file, );
+
+        my $dest_filename =
+          sprintf( '%s-%s%s', $filename, $fingerprint, $suffix, );
+        my $dest_file = Path::Class::File->new( $dest_dir, $dest_filename, );
+        $file->copy_to($dest_file);
+
+        $file_cache{$rel_path} = {
+            'full_path'   => $full_path,
+            'mtime'       => $mtime,
+            'rel_path'    => $rel_path,
+            'fingerprint' => $fingerprint,
+            'dest_path'   => $dest_file->stringify,
+        };
+        return;
+    };
+    find( $wanted, $self->base_path, );
+    return \%file_cache;
 }
 
 =head1 AUTHOR
@@ -138,4 +233,4 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =cut
 
-1; # End of File::Assets::Precompile
+1;    # End of File::Assets::Precompile
