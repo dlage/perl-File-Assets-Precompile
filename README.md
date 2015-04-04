@@ -1,5 +1,5 @@
 
-==File-Assets-Precompile
+#File-Assets-Precompile
 
 [![Build Status](https://travis-ci.org/dlage/perl-File-Assets-Precompile.svg?branch=master)](https://travis-ci.org/dlage/perl-File-Assets-Precompile)
 
@@ -15,7 +15,7 @@ to provide version information here so that people can decide whether
 fixes for the module are worth downloading.
 
 
-INSTALLATION
+##INSTALLATION
 
 To install this module, run the following commands:
 
@@ -24,7 +24,7 @@ To install this module, run the following commands:
 	make test
 	make install
 
-SUPPORT AND DOCUMENTATION
+##SUPPORT AND DOCUMENTATION
 
 After installing, you can find documentation for this module with the
 perldoc command.
@@ -46,7 +46,7 @@ You can also look for information at:
         http://search.cpan.org/dist/File-Assets-Precompile/
 
 
-LICENSE AND COPYRIGHT
+##LICENSE AND COPYRIGHT
 
 Copyright (C) 2015 Dinis Lage
 
