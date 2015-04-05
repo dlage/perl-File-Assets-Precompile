@@ -18,10 +18,12 @@ fixes for the module are worth downloading.
 There are still a lot of things on the way: 
 * Compress files - CSS and JS mainly 
 * Manifest files - glue together multiple CSS and JS files 
-  * Allow separator between files - probably default to `/* filename */`
+ * Allow separator between files - probably default to `/* filename */`
+* Compile SASS/LESS/COFFEE
+ * Easy to add new "processors"
 * Helper method for file urls
-  * `asset-url('assets/path/to/asset.png')` would become `public/assets/path/to/asset-version12345678.png`
-  * also applied to fonts, etc...
+ * `asset-url('assets/path/to/asset.png')` would become `public/assets/path/to/asset-version12345678.png`
+ * also applied to fonts, etc...
 
 ##INSTALLATION
 
