@@ -30,15 +30,23 @@ Example usage:
 
 In your base mojo class:
 ```perl
-    my $assets = File::Assets::Precompile->new(
-        'base_path'        => $self->home . '/assets/',
-        'output_path'      => $self->home . '/public/assets/',
-        'base_url'         => '/assets/',
-        'development_mode' => 1,
-    );
-    $assets->copy_files();
-    $self->helper(
-        'asset_url' => sub { my $self = shift; $assets->asset_url(@_); }, );
+my $assets = File::Assets::Precompile->new(
+    'base_path'        => $self->home . '/assets/',
+    'output_path'      => $self->home . '/public/assets/',
+    'base_url'         => '/assets/',
+    'development_mode' => 1,
+);  
+$assets->copy_files();
+$self->helper(
+    'asset_url' => sub { 
+        my $self = shift; 
+        $assets->asset_url(@_); 
+    }, 
+);
+```
+Then, in you templates:
+```perl
+<%= link_to 'my versioned asset' => asset_url('bootstrap-3.3.4-dist/js/bootstrap.js') %>
 ```
 ##SUPPORT AND DOCUMENTATION
 
