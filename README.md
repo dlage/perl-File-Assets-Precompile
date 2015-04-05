@@ -14,6 +14,14 @@ can use it to get an idea of the module's uses. It is usually a good idea
 to provide version information here so that people can decide whether
 fixes for the module are worth downloading.
 
+##TO-DO List 
+There are still a lot of things on the way: 
+* Compress files - CSS and JS mainly 
+* Manifest files - glue together multiple CSS and JS files 
+  * Allow separator between files - probably default to `/* filename */`
+* Helper method for file urls
+  * `asset-url('assets/path/to/asset.png')` would become `public/assets/path/to/asset-version12345678.png`
+  * also applied to fonts, etc...
 
 ##INSTALLATION
 
