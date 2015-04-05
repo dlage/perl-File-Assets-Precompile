@@ -24,6 +24,22 @@ To install this module, run the following commands:
 	make test
 	make install
 
+##USAGE
+
+Example usage:
+
+In your base mojo class:
+```perl
+    my $assets = File::Assets::Precompile->new(
+        'base_path'        => $self->home . '/assets/',
+        'output_path'      => $self->home . '/public/assets/',
+        'base_url'         => '/assets/',
+        'development_mode' => 1,
+    );
+    $assets->copy_files();
+    $self->helper(
+        'asset_url' => sub { my $self = shift; $assets->asset_url(@_); }, );
+```
 ##SUPPORT AND DOCUMENTATION
 
 After installing, you can find documentation for this module with the

@@ -65,18 +65,52 @@ has 'digest_method' => (
     'default' => 'MD5',
 );
 
+has 'full_digest' => (
+    'is'         => 'ro',
+    'lazy_build' => 1,
+);
+
 has 'asset_cache' => (
-    'is'         => 'rw',
+    'is'         => 'ro',
     'isa'        => 'HashRef',
     'init_arg'   => undef,
     'lazy_build' => 1,
 );
 
-=head2 function1
+has 'base_url' => (
+    'is'       => 'rw',
+    'isa'      => 'Str',
+    'required' => 1,
+);
+
+has 'development_mode' => (
+    'is'      => 'ro',
+    'isa'     => 'Bool',
+    'default' => 0,
+);
+
+has 'versionized_extensions' => (
+    'is'         => 'ro',
+    'isa'        => 'HashRef',
+    'lazy_build' => 1,
+);
+
+sub _build_versionized_extensions {
+    my $self = shift;
+    return {
+        '.css' => 1,
+        '.js'  => 1,
+    };
+}
+
+=head2 _build_full_digest
 
 =cut
 
-sub function1 {
+sub _build_full_digest {
+    my $self   = shift;
+    my $digest = Digest->new( $self->digest_method );
+    return $digest;
 }
 
 =head2 _build_asset_cache
@@ -105,6 +139,32 @@ sub calculate_fingerprint {
     return $digest->hexdigest;
 }
 
+sub _file_mtime {
+    my $file  = shift;
+    my $mtime = [ stat($file) ]->[9];
+    return $mtime;
+}
+
+sub _metadata_from_file {
+    my $self      = shift;
+    my $full_path = shift;
+    if ( !-f $full_path ) {
+        return;
+    }
+    my $file = Path::Class::File->new($full_path);
+    my $rel_path = File::Spec->abs2rel( $file, $self->base_path );
+
+    my $fingerprint = $self->calculate_fingerprint( 'file' => $file, );
+
+    $self->full_digest->add( $rel_path, $fingerprint, );
+    return {
+        'full_path'   => $full_path,
+        'rel_path'    => $rel_path,
+        'fingerprint' => $fingerprint,
+        'mtime'       => 0,
+    };
+}
+
 sub find_files {
     my $self = shift;
     my %args = @_;
@@ -112,37 +172,116 @@ sub find_files {
     my %file_cache;
     my $wanted = sub {
         my $full_path = $File::Find::name;
-        if ( !-f $full_path ) {
+        my $res       = $self->_metadata_from_file($full_path);
+        if ( !$res ) {
             return;
         }
-        my $file     = Path::Class::File->new($full_path);
-        my $rel_path = File::Spec->abs2rel( $file, $self->base_path );
-        my $mtime    = [ stat($file) ]->[9];
-
-        my ( $filename, $dirs, $suffix ) = File::Basename::fileparse($rel_path,'\..*');
-        my $dest_dir = Path::Class::Dir->new( $self->output_path, $dirs, );
-        if ( !-d $dest_dir ) {
-            $dest_dir->mkpath;
-        }
-
-        my $fingerprint = $self->calculate_fingerprint( 'file' => $file, );
-
-        my $dest_filename =
-          sprintf( '%s-%s%s', $filename, $fingerprint, $suffix, );
-        my $dest_file = Path::Class::File->new( $dest_dir, $dest_filename, );
-        $file->copy_to($dest_file);
-
-        $file_cache{$rel_path} = {
-            'full_path'   => $full_path,
-            'mtime'       => $mtime,
-            'rel_path'    => $rel_path,
-            'fingerprint' => $fingerprint,
-            'dest_path'   => $dest_file->stringify,
-        };
-        return;
+        $file_cache{ $res->{'rel_path'} } = $res;
     };
     find( $wanted, $self->base_path, );
     return \%file_cache;
+}
+
+sub copy_files {
+    my $self = shift;
+    my %args = @_;
+
+    # Make sure cache is initialized before full_digest request
+    my $asset_cache = $self->asset_cache;
+
+    my $aggregate_digest = $self->full_digest->hexdigest;
+
+    my $output_path = Path::Class::Dir->new( $self->output_path );
+    $output_path->rmtree();
+
+    for my $value ( values %{ $self->asset_cache } ) {
+        $self->_process_file($value);
+    }
+    return;
+}
+
+sub _process_file {
+    my $self     = shift;
+    my $value    = shift;
+    my $rel_path = $value->{'rel_path'};
+
+    my ( $filename, $dirs, $suffix ) =
+      File::Basename::fileparse( $rel_path, qr/\.[^.]*/ );
+    my $dest_dir = Path::Class::Dir->new( $self->output_path, $dirs, );
+
+    my $fingerprint = $value->{'fingerprint'};
+
+    my $dest_filename = $filename . $suffix;
+    if ( $self->versionized_extensions->{$suffix} ) {
+        $dest_filename =
+          sprintf( '%s-%s%s', $filename, $fingerprint, $suffix, );
+    }
+
+    my $dest_file = Path::Class::File->new( $dest_dir, $dest_filename, );
+
+    my $file  = Path::Class::File->new( $value->{'full_path'}, );
+    my $mtime = _file_mtime($file);
+
+    my $target_rel_path = File::Spec->abs2rel( $dest_file, $self->output_path );
+
+    if ( !-d $dest_dir ) {
+        $dest_dir->mkpath;
+    }
+
+    $file->copy_to($dest_file);
+
+    $value->{'dest_path'}     = $dest_file->stringify;
+    $value->{'dest_rel_path'} = $target_rel_path;
+    $value->{'mtime'}         = $mtime;
+}
+
+sub _check_refresh_file {
+    my $self  = shift;
+    my $asset = shift;
+}
+
+sub _get_asset {
+    my $self            = shift;
+    my $asset_requested = shift;
+
+    my $asset = $self->asset_cache->{$asset_requested};
+    if ( !$self->development_mode ) {
+        return $asset;
+    }
+
+    my $mtime = _file_mtime( $asset->{'full_path'} );
+    if ( !$asset or ( $mtime != $asset->{'mtime'} ) ) {
+
+        # Let's check if it's a new asset
+        my $full_path =
+          Path::Class::File->new( $self->base_path, $asset_requested, );
+        $asset = $self->_metadata_from_file( $full_path );
+        if ( !$asset ) {
+
+            # File not found
+            return;
+        }
+
+        $self->_process_file($asset);
+        $self->asset_cache->{ $asset->{'rel_path'} } = $asset;
+    }
+
+    return $asset;
+}
+
+sub asset_url {
+    my $self            = shift;
+    my $asset_requested = shift;
+
+    my $asset = $self->_get_asset($asset_requested);
+    if ( !$asset ) {
+
+        # TODO Asset not found... log error
+        return $asset_requested;
+    }
+
+    my $uri     = $self->base_url . $asset->{'dest_rel_path'};
+    return $uri;
 }
 
 =head1 AUTHOR
