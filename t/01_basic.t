@@ -12,8 +12,10 @@ require "$FindBin::Bin/common.pl";
 my $fap = File::Assets::Precompile->new(
     'base_path'   => "$FindBin::Bin/assets/",
     'output_path' => "$FindBin::Bin/public/assets/",
+    'minify'      => 1,
+
     #'base_url'    => 'https://cdn.example.com/public/assets/',
-    'base_url'    => '/public/assets/',
+    'base_url'         => '/public/assets/',
     'development_mode' => 1,
 );
 ok( $fap, 'Got object' );

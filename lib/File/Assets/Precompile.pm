@@ -1,11 +1,14 @@
 package File::Assets::Precompile;
 {
-    $File::Assets::Precompile::VERSION = '0.01';
+    $File::Assets::Precompile::VERSION = '0.0.1';
 }
 
 use 5.006;
 use strict;
 use warnings;
+
+use Log::Log4perl;
+my $l = Log::Log4perl::get_logger();
 
 =head1 NAME
 
@@ -25,7 +28,14 @@ Perhaps a little code snippet.
 
     use File::Assets::Precompile;
 
-    my $foo = File::Assets::Precompile->new();
+    my $foo = File::Assets::Precompile->new(
+        'base_path'   => "$FindBin::Bin/assets/",
+        'output_path' => "$FindBin::Bin/public/assets/",
+
+        #'base_url'    => 'https://cdn.example.com/public/assets/',
+        'base_url'         => '/public/assets/',
+        'development_mode' => 1,
+    );
     ...
 
 =head1 EXPORT
@@ -93,6 +103,12 @@ has 'versionized_extensions' => (
     'is'         => 'ro',
     'isa'        => 'HashRef',
     'lazy_build' => 1,
+);
+
+has 'minify' => (
+    'is'      => 'ro',
+    'isa'     => 'Bool',
+    'default' => 0,
 );
 
 sub _build_versionized_extensions {
@@ -194,7 +210,8 @@ sub copy_files {
     my $output_path = Path::Class::Dir->new( $self->output_path );
     $output_path->rmtree();
 
-    for my $value ( values %{ $self->asset_cache } ) {
+    $l->info( 'Copying ', scalar( keys %{$asset_cache} ), ' files', );
+    for my $value ( values %{$asset_cache} ) {
         $self->_process_file($value);
     }
     return;
@@ -228,11 +245,52 @@ sub _process_file {
         $dest_dir->mkpath;
     }
 
-    $file->copy_to($dest_file);
-
     $value->{'dest_path'}     = $dest_file->stringify;
     $value->{'dest_rel_path'} = $target_rel_path;
     $value->{'mtime'}         = $mtime;
+    $value->{'suffix'}        = $suffix;
+
+    my $minified = $self->_try_minify(
+        'asset'            => $value,
+        'original_file'    => $file,
+        'destination_file' => $dest_file,
+    );
+
+    # If no minification was possible just copy the original
+    if ( !$minified ) {
+        $file->copy_to($dest_file);
+    }
+
+    return;
+}
+
+sub _try_minify {
+    my $self = shift;
+    my %args = @_;
+
+    my $asset            = $args{'asset'};
+    my $original_file    = $args{'original_file'};
+    my $destination_file = $args{'destination_file'};
+
+    if ( !$self->minify ) {
+        return;
+    }
+
+    if ( $asset->{'suffix'} eq '.css' ) {
+        my $original = $original_file->slurp();
+        my $minified = CSS::Minifier::XS::minify($original);
+        $destination_file->spew($minified);
+        return 1;
+    }
+
+    if ( $asset->{'suffix'} eq '.js' ) {
+        my $original = $original_file->slurp();
+        my $minified = JavaScript::Minifier::XS::minify($original);
+        $destination_file->spew($minified);
+        return 1;
+    }
+
+    return;
 }
 
 sub _check_refresh_file {
@@ -252,10 +310,10 @@ sub _get_asset {
     my $mtime = _file_mtime( $asset->{'full_path'} );
     if ( !$asset or ( $mtime != $asset->{'mtime'} ) ) {
 
-        # Let's check if it's a new asset
+        # Treat as a new file
         my $full_path =
           Path::Class::File->new( $self->base_path, $asset_requested, );
-        $asset = $self->_metadata_from_file( $full_path );
+        $asset = $self->_metadata_from_file($full_path);
         if ( !$asset ) {
 
             # File not found
@@ -280,7 +338,7 @@ sub asset_url {
         return $asset_requested;
     }
 
-    my $uri     = $self->base_url . $asset->{'dest_rel_path'};
+    my $uri = $self->base_url . $asset->{'dest_rel_path'};
     return $uri;
 }
 
