@@ -16,12 +16,12 @@ fixes for the module are worth downloading.
 
 ##TO-DO List 
 There are still a lot of things on the way: 
-* Compress files - CSS and JS mainly 
+* Compress files - CSS and JS mainly - DONE
 * Manifest files - glue together multiple CSS and JS files 
  * Allow separator between files - probably default to `/* filename */`
 * Compile SASS/LESS/COFFEE
  * Easy to add new "processors"
-* Helper method for file urls
+* Helper method for file urls - DONE without helper (find & replace)
  * `asset-url('assets/path/to/asset.png')` would become `public/assets/path/to/asset-version12345678.png`
  * also applied to fonts, etc...
 

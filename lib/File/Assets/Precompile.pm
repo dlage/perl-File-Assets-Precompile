@@ -192,7 +192,7 @@ sub _metadata_from_file {
     my $mime_type   = $ft->checktype_filename( $file->absolute );
 
     my ( $filename, $dirs, $suffix ) =
-      File::Basename::fileparse( $rel_path, qr/\.[^.]*/ );
+      File::Basename::fileparse( $rel_path, qr/(\.[^.]*?){1,2}/ );
 
     $self->full_digest->add( $rel_path, $fingerprint, );
     return {
@@ -264,7 +264,7 @@ sub _process_file {
 
     $asset->{'mtime'} = $mtime;
 
-    #$l->debug( 'Getting file: ', { 'filter' => \&Dumper, 'value' => $file, }, );
+   #$l->debug( 'Getting file: ', { 'filter' => \&Dumper, 'value' => $file, }, );
     my $content = $self->_get_content(
         'asset'         => $asset,
         'original_file' => $file,
@@ -311,6 +311,7 @@ sub _replace_asset_references {
       File::Basename::dirname( $asset->{'full_path'} );
 
     my $total_subs = 0;
+    my @replacements;
     for my $asset_ref ( $self->asset_cache_values ) {
         my $rel_path_to_ref =
           File::Spec->abs2rel( $asset_ref->{'full_path'}, $base_path, );
@@ -321,11 +322,35 @@ sub _replace_asset_references {
         my $target_ref = $rel_path_to_ref;
         $target_ref =~ s/$suffix$/-${fingerprint}${suffix}/g;
 
-        my $count_changes = $content =~ s/$rel_path_to_ref/$target_ref/g;
+        if ( $content !~ m/$rel_path_to_ref/ ) {
 
-        next unless $count_changes;
+            # No replacements to make here
+            next;
+        }
+
+        push( @replacements,
+            { 'from' => $rel_path_to_ref, 'to' => $target_ref, },
+        );
+    }
+
+    if ( !@replacements ) {
+        return $content;
+    }
+
+    # Replace bigger matches first
+    my @ordered_replacements =
+      sort { length( $b->{'from'} ) <=> length( $a->{'from'} ) } @replacements;
+
+    $l->debug( 'Dump var: ',
+        { 'filter' => \&Dumper, 'value' => \@ordered_replacements, },
+    );
+    for my $replacement (@ordered_replacements) {
+        my $from_str      = $replacement->{'from'};
+        my $to_str        = $replacement->{'to'};
+        my $count_changes = $content =~ s/$from_str/$to_str/g;
+
         $total_subs += $count_changes;
-        $l->debug( 'Changed "', $rel_path_to_ref, '" to "', $target_ref, '" ',
+        $l->debug( 'Changed "', $from_str, '" to "', $to_str, '" ',
             $count_changes, ' times.', );
     }
 
@@ -353,11 +378,13 @@ sub _get_content {
 
     my $minified;
 
-    if ( $asset->{'suffix'} eq '.css' ) {
+    if ( $asset->{'suffix'} =~ /\.css$/ ) {
+        $asset->{'dirty_fingerprint'} = 1;
         $minified = CSS::Minifier::XS::minify($original);
     }
 
-    if ( $asset->{'suffix'} eq '.js' ) {
+    if ( $asset->{'suffix'} =~ /\.js$/ ) {
+        $asset->{'dirty_fingerprint'} = 1;
         $minified = JavaScript::Minifier::XS::minify($original);
     }
 
