@@ -49,8 +49,11 @@ if you don't export anything, such as for a purely object-oriented module.
 use Moose;
 use namespace::autoclean;
 
+use Carp qw( croak );
+use Data::Dumper;
 use File::Basename qw();
 use File::Find;
+use File::MMagic;
 use Path::Class;
 use Path::Class::Dir;
 use Path::Class::File;
@@ -85,6 +88,12 @@ has 'asset_cache' => (
     'isa'        => 'HashRef',
     'init_arg'   => undef,
     'lazy_build' => 1,
+    'traits'     => ['Hash'],
+    'handles'    => {
+        'asset_cache_values' => 'values',
+        'asset_cache_count'  => 'count',
+        'asset_cache_keys'   => 'keys',
+    },
 );
 
 has 'base_url' => (
@@ -146,11 +155,19 @@ sub calculate_fingerprint {
     my $self = shift;
     my %args = @_;
 
-    my $file = $args{'file'};
-    open my $fh, '<:raw', $file;
+    my $file   = $args{'file'};
+    my $data   = $args{'data'};
     my $digest = Digest->new( $self->digest_method );
-    $digest->addfile($fh);
-    close($fh);
+
+    if ($file) {
+        open my $fh, '<:raw', $file;
+        $digest->addfile($fh);
+        close($fh);
+    }
+
+    if ($data) {
+        $digest->add($data);
+    }
 
     return $digest->hexdigest;
 }
@@ -171,6 +188,11 @@ sub _metadata_from_file {
     my $rel_path = File::Spec->abs2rel( $file, $self->base_path );
 
     my $fingerprint = $self->calculate_fingerprint( 'file' => $file, );
+    my $ft          = File::MMagic->new();
+    my $mime_type   = $ft->checktype_filename( $file->absolute );
+
+    my ( $filename, $dirs, $suffix ) =
+      File::Basename::fileparse( $rel_path, qr/\.[^.]*/ );
 
     $self->full_digest->add( $rel_path, $fingerprint, );
     return {
@@ -178,6 +200,10 @@ sub _metadata_from_file {
         'rel_path'    => $rel_path,
         'fingerprint' => $fingerprint,
         'mtime'       => 0,
+        'mime_type'   => $mime_type,
+        'suffix'      => $suffix,
+        'filename'    => $filename,
+        'dirs'        => $dirs,
     };
 }
 
@@ -210,8 +236,8 @@ sub copy_files {
     my $output_path = Path::Class::Dir->new( $self->output_path );
     $output_path->rmtree();
 
-    $l->info( 'Copying ', scalar( keys %{$asset_cache} ), ' files', );
-    for my $value ( values %{$asset_cache} ) {
+    $l->info( 'Copying ', $self->asset_cache_count, ' files', );
+    for my $value ( $self->asset_cache_values ) {
         $self->_process_file($value);
     }
     return;
@@ -219,78 +245,123 @@ sub copy_files {
 
 sub _process_file {
     my $self     = shift;
-    my $value    = shift;
-    my $rel_path = $value->{'rel_path'};
+    my $asset    = shift;
+    my $rel_path = $asset->{'rel_path'};
 
-    my ( $filename, $dirs, $suffix ) =
-      File::Basename::fileparse( $rel_path, qr/\.[^.]*/ );
+    my $filename = $asset->{'filename'};
+    my $dirs     = $asset->{'dirs'};
+    my $suffix   = $asset->{'suffix'};
     my $dest_dir = Path::Class::Dir->new( $self->output_path, $dirs, );
 
-    my $fingerprint = $value->{'fingerprint'};
-
     my $dest_filename = $filename . $suffix;
-    if ( $self->versionized_extensions->{$suffix} ) {
-        $dest_filename =
-          sprintf( '%s-%s%s', $filename, $fingerprint, $suffix, );
-    }
 
-    my $dest_file = Path::Class::File->new( $dest_dir, $dest_filename, );
-
-    my $file  = Path::Class::File->new( $value->{'full_path'}, );
+    my $file  = Path::Class::File->new( $asset->{'full_path'}, );
     my $mtime = _file_mtime($file);
-
-    my $target_rel_path = File::Spec->abs2rel( $dest_file, $self->output_path );
 
     if ( !-d $dest_dir ) {
         $dest_dir->mkpath;
     }
 
-    $value->{'dest_path'}     = $dest_file->stringify;
-    $value->{'dest_rel_path'} = $target_rel_path;
-    $value->{'mtime'}         = $mtime;
-    $value->{'suffix'}        = $suffix;
+    $asset->{'mtime'} = $mtime;
 
-    my $minified = $self->_try_minify(
-        'asset'            => $value,
-        'original_file'    => $file,
-        'destination_file' => $dest_file,
+    #$l->debug( 'Getting file: ', { 'filter' => \&Dumper, 'value' => $file, }, );
+    my $content = $self->_get_content(
+        'asset'         => $asset,
+        'original_file' => $file,
     );
 
-    # If no minification was possible just copy the original
-    if ( !$minified ) {
-        $file->copy_to($dest_file);
+    if ( $asset->{'mime_type'} eq 'text/plain' ) {
+        $content = $self->_replace_asset_references(
+            'asset'   => $asset,
+            'content' => $content,
+        );
     }
+
+    if ( $asset->{'dirty_fingerprint'} ) {
+        $asset->{'fingerprint'} =
+          $self->calculate_fingerprint( 'data' => $content, );
+    }
+
+    my $fingerprint = $asset->{'fingerprint'};
+
+    #if ( $self->versionized_extensions->{$suffix} ) {
+    $dest_filename = sprintf( '%s-%s%s', $filename, $fingerprint, $suffix, );
+
+    #}
+
+    my $dest_file = Path::Class::File->new( $dest_dir, $dest_filename, );
+
+    my $target_rel_path = File::Spec->abs2rel( $dest_file, $self->output_path );
+    $asset->{'dest_rel_path'} = $target_rel_path;
+    $asset->{'dest_path'}     = $dest_file->stringify;
+
+    $dest_file->spew($content);
 
     return;
 }
 
-sub _try_minify {
+sub _replace_asset_references {
     my $self = shift;
     my %args = @_;
 
-    my $asset            = $args{'asset'};
-    my $original_file    = $args{'original_file'};
-    my $destination_file = $args{'destination_file'};
+    my $asset   = $args{'asset'};
+    my $content = $args{'content'};
 
-    if ( !$self->minify ) {
-        return;
+    my $base_path = my $full_path =
+      File::Basename::dirname( $asset->{'full_path'} );
+
+    my $total_subs = 0;
+    for my $asset_ref ( $self->asset_cache_values ) {
+        my $rel_path_to_ref =
+          File::Spec->abs2rel( $asset_ref->{'full_path'}, $base_path, );
+
+        my $suffix      = $asset_ref->{'suffix'};
+        my $fingerprint = $asset_ref->{'fingerprint'};
+
+        my $target_ref = $rel_path_to_ref;
+        $target_ref =~ s/$suffix$/-${fingerprint}${suffix}/g;
+
+        my $count_changes = $content =~ s/$rel_path_to_ref/$target_ref/g;
+
+        next unless $count_changes;
+        $total_subs += $count_changes;
+        $l->debug( 'Changed "', $rel_path_to_ref, '" to "', $target_ref, '" ',
+            $count_changes, ' times.', );
     }
 
+    if ($total_subs) {
+        $asset->{'dirty_fingerprint'} = 1;
+        $l->debug( 'Made ', $total_subs, ' changes in asset: ',
+            $asset->{'full_path'}, );
+    }
+
+    return $content;
+}
+
+sub _get_content {
+    my $self = shift;
+    my %args = @_;
+
+    my $asset         = $args{'asset'};
+    my $original_file = $args{'original_file'};
+
+    my $original = $original_file->slurp();
+
+    if ( !$self->minify ) {
+        return $original;
+    }
+
+    my $minified;
+
     if ( $asset->{'suffix'} eq '.css' ) {
-        my $original = $original_file->slurp();
-        my $minified = CSS::Minifier::XS::minify($original);
-        $destination_file->spew($minified);
-        return 1;
+        $minified = CSS::Minifier::XS::minify($original);
     }
 
     if ( $asset->{'suffix'} eq '.js' ) {
-        my $original = $original_file->slurp();
-        my $minified = JavaScript::Minifier::XS::minify($original);
-        $destination_file->spew($minified);
-        return 1;
+        $minified = JavaScript::Minifier::XS::minify($original);
     }
 
-    return;
+    return $minified || $original;
 }
 
 sub _check_refresh_file {

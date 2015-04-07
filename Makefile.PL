@@ -18,6 +18,7 @@ WriteMakefile(
         'Path::Class'              => 0,
         'CSS::Minifier::XS'        => 0,
         'Log::Log4perl'            => 0,
+        'File::MMagic'             => 0,
 
         #'ABC'              => 1.6,
         #'Foo::Bar::Module' => 5.0401,
