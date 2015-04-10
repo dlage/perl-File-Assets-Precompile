@@ -34,6 +34,9 @@ To install this module, run the following commands:
 	make test
 	make install
 
+##WARNINGS
+This module is still in development and a lot of it may change.
+
 ##USAGE
 
 Example usage:

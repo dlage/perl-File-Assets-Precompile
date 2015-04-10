@@ -194,6 +194,11 @@ sub _metadata_from_file {
     my ( $filename, $dirs, $suffix ) =
       File::Basename::fileparse( $rel_path, qr/(\.[^.]*?){1,2}/ );
 
+    my $ignored_suffixes = '\.map$';
+    if ( $suffix =~ /$ignored_suffixes/ ) {
+        return;
+    }
+
     $self->full_digest->add( $rel_path, $fingerprint, );
     return {
         'full_path'   => $full_path,
@@ -389,6 +394,13 @@ sub _get_content {
     }
 
     return $minified || $original;
+}
+
+sub _run_precompiler {
+    my $self = shift;
+    my %args = @_;
+
+    my $asset         = $args{'asset'};
 }
 
 sub _check_refresh_file {
