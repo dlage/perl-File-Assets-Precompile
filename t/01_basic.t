@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 75;
+use Test::More;
 
 use File::Assets::Precompile;
 
@@ -39,6 +39,8 @@ for my $key ( keys %expected_result ) {
         );
     }
 }
+
+done_testing();
 
 sub expected_result {
     return (
