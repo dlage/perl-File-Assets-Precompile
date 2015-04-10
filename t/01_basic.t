@@ -50,7 +50,6 @@ sub expected_result {
             'filename'          => 'bootstrap-theme',
             'fingerprint'       => '53ebfaed3b2da023bda7a9c051bc2dc8',
             'mime_type' => 'text/plain',
-            'mtime'     => 1426495328,
             'rel_path'  => 'bootstrap-3.3.4-dist/css/bootstrap-theme.css',
             'suffix'    => '.css'
         },
@@ -62,7 +61,6 @@ sub expected_result {
             'filename'          => 'bootstrap',
             'fingerprint'       => '0430bdc84aa2e3c6e4f0c260203551c1',
             'mime_type' => 'text/plain',
-            'mtime'     => 1426495330,
             'rel_path'  => 'bootstrap-3.3.4-dist/css/bootstrap.css',
             'suffix'    => '.css'
         },
@@ -73,7 +71,6 @@ sub expected_result {
             'filename'    => 'glyphicons-halflings-regular',
             'fingerprint' => 'f4769f9bdb7466be65088239c12046d1',
             'mime_type' => 'application/octet-stream',
-            'mtime'     => 1426397960,
             'rel_path' =>
               'bootstrap-3.3.4-dist/fonts/glyphicons-halflings-regular.eot',
             'suffix' => '.eot'
@@ -85,7 +82,6 @@ sub expected_result {
             'filename'    => 'glyphicons-halflings-regular',
             'fingerprint' => '89889688147bd7575d6327160d64e760',
             'mime_type' => 'text/plain',
-            'mtime'     => 1426397960,
             'rel_path' =>
               'bootstrap-3.3.4-dist/fonts/glyphicons-halflings-regular.svg',
             'suffix' => '.svg'
@@ -97,7 +93,6 @@ sub expected_result {
             'filename'    => 'glyphicons-halflings-regular',
             'fingerprint' => 'e18bbf611f2a2e43afc071aa2f4e1512',
             'mime_type' => 'application/octet-stream',
-            'mtime'     => 1426397960,
             'rel_path' =>
               'bootstrap-3.3.4-dist/fonts/glyphicons-halflings-regular.ttf',
             'suffix' => '.ttf'
@@ -109,7 +104,6 @@ sub expected_result {
             'filename'    => 'glyphicons-halflings-regular',
             'fingerprint' => 'fa2772327f55d8198301fdb8bcfc8158',
             'mime_type' => 'application/octet-stream',
-            'mtime'     => 1426397960,
             'rel_path' =>
               'bootstrap-3.3.4-dist/fonts/glyphicons-halflings-regular.woff',
             'suffix' => '.woff'
@@ -121,7 +115,6 @@ sub expected_result {
             'filename'    => 'glyphicons-halflings-regular',
             'fingerprint' => '448c34a56d699c29117adc64c43affeb',
             'mime_type' => 'application/octet-stream',
-            'mtime'     => 1426397960,
             'rel_path' =>
               'bootstrap-3.3.4-dist/fonts/glyphicons-halflings-regular.woff2',
             'suffix' => '.woff2'
@@ -133,7 +126,6 @@ sub expected_result {
             'filename'    => 'bootstrap',
             'fingerprint' => '9cb0532955cf4d4fb43f792ce0f87227',
             'mime_type' => 'text/plain',
-            'mtime'     => 1426495330,
             'rel_path'  => 'bootstrap-3.3.4-dist/js/bootstrap.js',
             'suffix'    => '.js'
         },
@@ -144,7 +136,6 @@ sub expected_result {
             'filename'    => 'npm',
             'fingerprint' => 'ccb7f3909e30b1eb8f65a24393c6e12b',
             'mime_type' => 'text/plain',
-            'mtime'     => 1426495330,
             'rel_path'  => 'bootstrap-3.3.4-dist/js/npm.js',
             'suffix'    => '.js'
           }
