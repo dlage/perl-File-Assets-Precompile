@@ -541,4 +541,5 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =cut
 
+__PACKAGE__->meta->make_immutable;
 1;    # End of File::Assets::Precompile
