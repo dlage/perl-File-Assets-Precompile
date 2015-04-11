@@ -23,15 +23,6 @@ t/assets/bootstrap-3.3.4-dist/js/bootstrap.js
 t/assets/bootstrap-3.3.4-dist/js/npm.js
 t/author-critic.t
 t/common.pl
-t/public/assets/bootstrap-3.3.4-dist/css/bootstrap-0430bdc84aa2e3c6e4f0c260203551c1.css
-t/public/assets/bootstrap-3.3.4-dist/css/bootstrap-theme-53ebfaed3b2da023bda7a9c051bc2dc8.css
-t/public/assets/bootstrap-3.3.4-dist/fonts/glyphicons-halflings-regular-448c34a56d699c29117adc64c43affeb.woff2
-t/public/assets/bootstrap-3.3.4-dist/fonts/glyphicons-halflings-regular-89889688147bd7575d6327160d64e760.svg
-t/public/assets/bootstrap-3.3.4-dist/fonts/glyphicons-halflings-regular-e18bbf611f2a2e43afc071aa2f4e1512.ttf
-t/public/assets/bootstrap-3.3.4-dist/fonts/glyphicons-halflings-regular-f4769f9bdb7466be65088239c12046d1.eot
-t/public/assets/bootstrap-3.3.4-dist/fonts/glyphicons-halflings-regular-fa2772327f55d8198301fdb8bcfc8158.woff
-t/public/assets/bootstrap-3.3.4-dist/js/bootstrap-9cb0532955cf4d4fb43f792ce0f87227.js
-t/public/assets/bootstrap-3.3.4-dist/js/npm-ccb7f3909e30b1eb8f65a24393c6e12b.js
 t/release-pod-coverage.t
 t/release-pod-syntax.t
 t/release/manifest.t
