@@ -1,11 +1,11 @@
 package File::Assets::Precompile;
-{
-    $File::Assets::Precompile::VERSION = '0.0.1';
-}
 
 use 5.006;
 use strict;
 use warnings;
+{
+    $File::Assets::Precompile::VERSION = '0.0.1';
+}
 
 use Log::Log4perl;
 my $l = Log::Log4perl::get_logger();
