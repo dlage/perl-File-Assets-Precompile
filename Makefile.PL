@@ -16,7 +16,14 @@ my %WriteMakefileArgs = (
   "EXE_FILES" => [],
   "LICENSE" => "perl",
   "NAME" => "File::Assets::Precompile",
-  "PREREQ_PM" => {},
+  "PREREQ_PM" => {
+    "CSS::Minifier::XS" => 0,
+    "Carp" => 0,
+    "File::MMagic" => 0,
+    "JavaScript::Minifier::XS" => 0,
+    "Log::Log4perl" => 0,
+    "Path::Class" => 0
+  },
   "VERSION" => "0.0.1",
   "test" => {
     "TESTS" => "t/*.t t/release/*.t"
@@ -25,7 +32,13 @@ my %WriteMakefileArgs = (
 
 
 my %FallbackPrereqs = (
-  "ExtUtils::MakeMaker" => 0
+  "CSS::Minifier::XS" => 0,
+  "Carp" => 0,
+  "ExtUtils::MakeMaker" => 0,
+  "File::MMagic" => 0,
+  "JavaScript::Minifier::XS" => 0,
+  "Log::Log4perl" => 0,
+  "Path::Class" => 0
 );
 
 

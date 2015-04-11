@@ -12,4 +12,11 @@ meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
   version: '1.4'
 name: File-Assets-Precompile
+requires:
+  CSS::Minifier::XS: '0'
+  Carp: '0'
+  File::MMagic: '0'
+  JavaScript::Minifier::XS: '0'
+  Log::Log4perl: '0'
+  Path::Class: '0'
 version: 0.0.1
