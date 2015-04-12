@@ -1,7 +1,7 @@
 
 #File-Assets-Precompile
 
-[![Build Status](https://travis-ci.org/dlage/perl-File-Assets-Precompile.svg?branch=master)](https://travis-ci.org/dlage/perl-File-Assets-Precompile)
+[![Build Status](https://travis-ci.org/dlage/perl-File-Assets-Precompile.svg?branch=build%2Fmaster)](https://travis-ci.org/dlage/perl-File-Assets-Precompile)
 
 The README is used to introduce the module and provide instructions on
 how to install the module, any machine dependencies it may have (for
