@@ -40,6 +40,7 @@ for my $key ( keys %expected_result ) {
     }
 }
 
+$fap->clean_output();
 done_testing();
 
 sub expected_result {
