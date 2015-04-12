@@ -238,13 +238,19 @@ sub copy_files {
 
     my $aggregate_digest = $self->full_digest->hexdigest;
 
-    my $output_path = Path::Class::Dir->new( $self->output_path );
-    $output_path->rmtree();
+    $self->clean_output();
 
     $l->info( 'Copying ', $self->asset_cache_count, ' files', );
     for my $value ( $self->asset_cache_values ) {
         $self->_process_file($value);
     }
+    return;
+}
+
+sub clean_output {
+    my $self = shift;
+    my $output_path = Path::Class::Dir->new( $self->output_path );
+    $output_path->rmtree();
     return;
 }
 
